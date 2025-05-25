@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TələbəLife - Təqvim</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/az.js"></script>
+    <style>
+        .modal-content {
+            margin: 5% auto;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.5);
+        }
+        
+        input[type="time"] {
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">TələbəLife</a>
+            <div class="nav-links">
+                <a href="index.html">Ana Səhifə</a>
+                <a href="groups.html">Qruplar</a>
+                <a href="notes.html">Notlar</a>
+                <a href="events.html">Tədbirlər</a>
+                <a href="calendar.html" class="active">Təqvim</a>
+                <a href="discounts.html">Endirimlər</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="calendar-header">
+            <h1>Təqvim</h1>
+            <div class="calendar-actions">
+                <button class="add-event-button" onclick="showAddEventModal()">
+                    <i class="fas fa-plus"></i> Tədbir Əlavə Et
+                </button>
+            </div>
+        </div>
+
+        <div class="calendar-container">
+            <div id="calendar"></div>
+        </div>
+    </div>
+
+    <!-- Tədbir Əlavə Et Modal -->
+    <div id="addEventModal" class="modal">
+        <div class="modal-content">
+            <h2>Yeni Tədbir</h2>
+            <form id="addEventForm">
+                <div class="form-group">
+                    <label for="eventTitle">Başlıq</label>
+                    <input type="text" id="eventTitle" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="eventDate">Tarix</label>
+                    <input type="date" id="eventDate" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="eventTime">Saat</label>
+                    <input type="time" id="eventTime" class="form-input" required step="1800" min="00:00" max="23:59">
+                </div>
+                <div class="form-group">
+                    <label for="eventDescription">Təsvir</label>
+                    <textarea id="eventDescription" class="form-input" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="eventType">Növ</label>
+                    <select id="eventType" class="form-input">
+                        <option value="class">Dərs</option>
+                        <option value="exam">İmtahan</option>
+                        <option value="event">Tədbir</option>
+                        <option value="reminder">Xatırlatma</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-button" onclick="hideAddEventModal()">Ləğv Et</button>
+                    <button type="submit" class="submit-button">Əlavə Et</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 TələbəLife. Bütün hüquqlar qorunur.</p>
+    </footer>
+
+    <script>
+        let calendar;
+        let events = [
+            {
+                title: 'Riyaziyyat Dərsləri',
+                start: '2025-05-20T10:00:00',
+                end: '2025-05-20T12:00:00',
+                description: 'Riyaziyyat dərsləri - 101 otağında'
+            },
+            {
+                title: 'Fizika İmtahanı',
+                start: '2025-05-25T14:00:00',
+                end: '2025-05-25T16:00:00',
+                description: 'Fizika imtahanı - 203 otağında'
+            },
+            {
+                title: 'Tələbə Gecəsi',
+                start: '2025-05-30T19:00:00',
+                end: '2025-05-30T23:00:00',
+                description: 'Tələbə gecəsi - Konfrans zalında'
+            }
+        ];
+
+        // Tədbirin statusunu (keçmiş, yaxın, gələcək) müəyyən edən funksiya
+        function getEventStatus(startDate) {
+            const now = new Date();
+            const start = new Date(startDate);
+            const diffMs = start.getTime() - now.getTime();
+            const diffHours = diffMs / (1000 * 60 * 60);
+
+            if (diffHours < 0) {
+                return 'past'; // Keçmiş
+            } else if (diffHours <= 48) {
+                return 'upcoming'; // Yaxın (48 saat ərzində)
+            } else {
+                return 'future'; // Gələcək
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                locale: 'az',
+                buttonText: {
+                    today: 'Bu gün',
+                    month: 'Ay',
+                    week: 'Həftə',
+                    day: 'Gün'
+                },
+                allDayText: 'Bütün gün',
+                slotLabelFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                },
+                slotMinTime: '08:00:00',
+                slotMaxTime: '20:00:00',
+                firstDay: 1,
+                dayHeaderFormat: { weekday: 'long' },
+                titleFormat: { 
+                    year: 'numeric',
+                    month: 'long'
+                },
+                events: events,
+                eventClick: function(info) {
+                    showEventDetails(info.event);
+                },
+                eventDidMount: function(info) {
+                    // Tədbir DOM-a əlavə edildikdən sonra statusu müəyyən edib sinif əlavə edirik
+                    const status = getEventStatus(info.event.start);
+                    info.el.classList.add(`event-${status}`);
+                },
+                views: {
+                    timeGridWeek: {
+                        slotLabelFormat: {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        }
+                    },
+                    timeGridDay: {
+                        slotLabelFormat: {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        }
+                    }
+                }
+            });
+            calendar.render();
+        });
+
+        function showAddEventModal() {
+            document.getElementById('addEventModal').style.display = 'block';
+        }
+
+        function hideAddEventModal() {
+            document.getElementById('addEventModal').style.display = 'none';
+            document.getElementById('addEventForm').reset();
+        }
+
+        function showEventDetails(event) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            
+            const content = document.createElement('div');
+            content.className = 'modal-content';
+            content.innerHTML = `
+                <h2>${event.title}</h2>
+                <div class="event-details">
+                    <p><strong>Başlama:</strong> ${event.start.toLocaleString('az-AZ', { 
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    })}</p>
+                    <p><strong>Bitmə:</strong> ${event.end.toLocaleString('az-AZ', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    })}</p>
+                    <p><strong>Təsvir:</strong> ${event.extendedProps.description || 'Təsvir yoxdur'}</p>
+                </div>
+                <div class="form-actions">
+                    <button class="delete-button" onclick="deleteEvent('${event.id}')">Sil</button>
+                    <button class="cancel-button" onclick="this.closest('.modal').remove()">Bağla</button>
+                </div>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+        }
+
+        function deleteEvent(eventId) {
+            if (confirm('Bu tədbiri silmək istədiyinizə əminsiniz?')) {
+                const event = calendar.getEventById(eventId);
+                if (event) {
+                    event.remove();
+                    events = events.filter(e => e.id !== eventId);
+                    showNotification('Tədbir uğurla silindi!', 'success');
+                }
+                document.querySelector('.modal').remove();
+            }
+        }
+
+        document.getElementById('addEventForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const title = document.getElementById('eventTitle').value;
+            const date = document.getElementById('eventDate').value;
+            const time = document.getElementById('eventTime').value;
+            const description = document.getElementById('eventDescription').value;
+            const type = document.getElementById('eventType').value;
+
+            // Tarix və saatı 24 saatlıq formata çeviririk
+            const [hours, minutes] = time.split(':');
+            const startDateTime = new Date(`${date}T${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00`);
+            const endDateTime = new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000);
+
+            const eventColor = {
+                'class': '#2563eb',
+                'exam': '#ef4444',
+                'event': '#22c55e',
+                'reminder': '#f59e0b'
+            }[type];
+
+            const eventId = 'event_' + Date.now();
+
+            const newEvent = {
+                id: eventId,
+                title: title,
+                start: startDateTime.toISOString(),
+                end: endDateTime.toISOString(),
+                color: eventColor, // Rəngi hələlik saxlayırıq, amma CSS əsas olacaq
+                description: description
+            };
+
+            events.push(newEvent);
+            calendar.addEvent(newEvent);
+            
+            showNotification('Tədbir uğurla əlavə edildi!', 'success');
+            hideAddEventModal();
+        });
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html> 
